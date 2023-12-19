@@ -18,11 +18,11 @@ class Ui_VoiceRecognizer(object):
         VoiceRecognizer.resize(1203, 772)
         self.centralwidget = QtWidgets.QWidget(VoiceRecognizer)
         self.centralwidget.setObjectName("centralwidget")
+        self.centralwidget.setStyleSheet("background-color: #1e1e2f;\n"
+"color:white;")
         self.gridLayout_2 = QtWidgets.QGridLayout(self.centralwidget)
         self.gridLayout_2.setObjectName("gridLayout_2")
         self.frame = QtWidgets.QFrame(self.centralwidget)
-        self.frame.setStyleSheet("background-color: #1e1e2f;\n"
-"color:white;")
         self.frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.frame.setFrameShadow(QtWidgets.QFrame.Raised)
         self.frame.setObjectName("frame")
@@ -65,7 +65,7 @@ class Ui_VoiceRecognizer(object):
         self.label_4.setObjectName("label_4")
         self.gridLayout_4.addWidget(self.label_4, 0, 0, 1, 1)
         self.SpectrogramWidget = MplWidget(self.frame_3)
-        self.SpectrogramWidget.setMinimumSize(QtCore.QSize(571, 0))
+        self.SpectrogramWidget.setMinimumSize(QtCore.QSize(570, 0))
         self.SpectrogramWidget.setObjectName("SpectrogramWidget")
         self.gridLayout_4.addWidget(self.SpectrogramWidget, 1, 0, 1, 1)
         self.gridLayout.addWidget(self.frame_3, 1, 0, 2, 1)
