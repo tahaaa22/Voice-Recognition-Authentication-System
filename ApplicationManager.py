@@ -48,8 +48,10 @@ class ApplicationManger:
             if self.recorded_voice_text == self.pass_sentences[i]:
                 self.pass_sentences_progress_bars[i].setValue(100)
                 self.ui.AccessLabel.setPixmap(self.right_mark_icon)
+                self.ui.label_6.setText("Access Authorized")
                 pixmap_added = True
             else:
                 self.pass_sentences_progress_bars[i].setValue(0)
             if not pixmap_added:
                 self.ui.AccessLabel.setPixmap(self.wrong_mark_icon)
+                self.ui.label_6.setText("Access Denied")
