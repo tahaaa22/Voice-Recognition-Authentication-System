@@ -1,5 +1,6 @@
-import speech_recognition as sr
-from PyQt5 import QtGui, QtCore
+import sounddevice as sd
+import soundfile as sf
+import librosa as lb
 from PyQt5.QtGui import QPixmap
 
 
@@ -7,7 +8,6 @@ class ApplicationManger:
     def __init__(self, ui):
         self.ui = ui
         self.fingerprint_mode = False
-        self.voice_recorder = sr.Recognizer()
         self.recorded_voice_text = ""
         self.recorded_voice = None
         self.pass_sentences = ["grant me access", "open middle door", "unlock the gate"]
@@ -22,22 +22,14 @@ class ApplicationManger:
     
     def record_voice(self):
         if self.ui.Public_RadioButton.isChecked:
-            while True:
-                with sr.Microphone() as microphone:
-                    print("Say something...")
-                    self.recorded_voice = self.voice_recorder.listen(microphone)
-                try:
-                    print("Recognizing...")
-                    self.recorded_voice_text = self.voice_recorder.recognize_google(self.recorded_voice)
-                    self.recorded_voice_text = self.recorded_voice_text.lower()
-                    print(f"You said: {self.recorded_voice_text}")
-                    self.display_text()
-                    self.check_pass_sentence()
-                    break
-                except sr.UnknownValueError:
-                    print("Could not understand audio, Please try again")
-                except sr.RequestError as e:
-                    print(f"Error with the request to Google Web Speech API; {0} {e}")
+            duration = 3  # seconds
+            sampling_frequency = 44100
+            self.recorded_voice = sd.rec(frames=int(sampling_frequency*duration), samplerate=sampling_frequency,
+                                         channels=1, blocking=True, dtype='int16')
+            sf.write("output.wav", self.recorded_voice, sampling_frequency)
+            self.recorded_voice, sampling_frequency = lb.load("output.wav")
+            self.ui.SpectrogramWidget.canvas.plot_spectrogram(self.recorded_voice, sampling_frequency)
+            print(self.recorded_voice)
 
     def display_text(self):
         self.ui.VoiceRecognizedLabel.setText(self.recorded_voice_text)
