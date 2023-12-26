@@ -1,7 +1,8 @@
 import pyaudio
 import numpy as np
 from PyQt5.QtGui import QPixmap
-
+import acoustid
+import wave
 
 class ApplicationManger:
     def __init__(self, ui):
@@ -9,6 +10,8 @@ class ApplicationManger:
         self.fingerprint_mode = False
         self.audio_input = pyaudio.PyAudio()
         self.recorded_data = None
+        self.sample_rate = 44100
+        self.fingerprint = None
         
         self.pass_sentences = ["grant me access", "open middle door", "unlock the gate"]
         self.pass_sentences_progress_bars = [ui.grant_progressBar, ui.open_progressBar, ui.unlock_progressBar]
@@ -22,14 +25,13 @@ class ApplicationManger:
         self.fingerprint_mode = not self.fingerprint_mode 
     
     def record_voice(self):
-        sample_rate = 44100
         chunk = 1024
         duration = 3
 
-        self.stream = self.audio_input.open(
+        stream = self.audio_input.open(
             format=pyaudio.paInt16,
             channels=1,
-            rate=44100,
+            rate=self.sample_rate,
             input=True,
             frames_per_buffer=1024
         )
@@ -37,13 +39,28 @@ class ApplicationManger:
         print("Recording...")
 
         self.recorded_data = []
-        for i in range(0, int(sample_rate / chunk * duration)):
-            data = np.frombuffer(self.stream.read(chunk), dtype=np.int16)
+        for i in range(0, int(self.sample_rate / chunk * duration)):
+            data = np.frombuffer(stream.read(chunk), dtype=np.int16)
             self.recorded_data.append(data)
 
         print("Finished recording.")
+        
         self.ui.SpectrogramWidget.canvas.plot_spectrogram(self.recorded_data, 44100)
+        self.save_audio()
+        self.fingerprint_audio_file()
+        
 
+    def save_audio(self):
+        wf = wave.open("audio.wav", 'wb')
+        wf.setnchannels(1)
+        wf.setsampwidth(pyaudio.PyAudio().get_sample_size(pyaudio.paInt16))
+        wf.setframerate(self.sample_rate)
+        wf.writeframes(b''.join(self.recorded_data))
+        wf.close()
+        
+    def fingerprint_audio_file(self):
+        duration, self.fingerprint = acoustid.fingerprint_file("audio.ogg")
+        print(duration, self.fingerprint) 
 
     def display_text(self):
         self.ui.VoiceRecognizedLabel.setText(self.recorded_voice_text)
