@@ -59,7 +59,7 @@ class ApplicationManger:
         wf.close()
         
     def fingerprint_audio_file(self):
-        duration, self.fingerprint = acoustid.fingerprint_file("audio.ogg")
+        duration, self.fingerprint = acoustid.fingerprint_file("audio.wav")
         print(duration, self.fingerprint) 
 
     def display_text(self):
