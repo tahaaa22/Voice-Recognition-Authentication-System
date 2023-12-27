@@ -1,8 +1,11 @@
-import pyaudio
-import numpy as np
 from PyQt5.QtGui import QPixmap
+import pyaudio
 import acoustid
+import chromaprint
 import wave
+import numpy as np
+import pandas as pd
+
 
 class ApplicationManger:
     def __init__(self, ui):
@@ -12,6 +15,9 @@ class ApplicationManger:
         self.recorded_data = None
         self.sample_rate = 44100
         self.fingerprint = None
+        self.Names = []
+        self.Passwords = []
+        self.fingerprints = []
         
         self.pass_sentences = ["grant me access", "open middle door", "unlock the gate"]
         self.pass_sentences_progress_bars = [ui.grant_progressBar, ui.open_progressBar, ui.unlock_progressBar]
@@ -23,6 +29,13 @@ class ApplicationManger:
 
     def switch_modes(self):
         self.fingerprint_mode = not self.fingerprint_mode 
+    
+    def read_fingerprints_from_csv(self):
+        Header = ["Name", "PassWord", "Fingerprint"]
+        File = pd.read_excel('DataBase.xlsx', usecols=Header)
+        self.Names = File["Name"]
+        self.Passwords = File["PassWord"]
+        self.fingerprints = File["Fingerprint"]
     
     def record_voice(self):
         chunk = 1024
@@ -59,8 +72,7 @@ class ApplicationManger:
         wf.close()
         
     def fingerprint_audio_file(self):
-        duration, self.fingerprint = acoustid.fingerprint_file("audio.wav")
-        print(duration, self.fingerprint) 
+        _, self.fingerprint = acoustid.fingerprint_file("audio.wav")     
 
     def display_text(self):
         self.ui.VoiceRecognizedLabel.setText(self.recorded_voice_text)

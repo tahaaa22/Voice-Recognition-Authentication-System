@@ -330,5 +330,6 @@ if __name__ == "__main__":
     ui = Ui_VoiceRecognizer()
     ui.setupUi(VoiceRecognizer)
     MAESTRO = ApplicationManger(ui)
+    MAESTRO.read_fingerprints_from_csv()
     VoiceRecognizer.show()
     sys.exit(app.exec_())
