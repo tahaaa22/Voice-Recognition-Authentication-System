@@ -40,7 +40,7 @@ class ApplicationManger:
             self.recorded_voice, sampling_frequency = lb.load("output.wav")
             self.ui.SpectrogramWidget.canvas.plot_spectrogram(self.recorded_voice, sampling_frequency)
 
-            # self.extract_features()
+            self.extract_features()
 
     def display_text(self):
         self.ui.VoiceRecognizedLabel.setText(self.recorded_voice_text)
@@ -65,10 +65,11 @@ class ApplicationManger:
         spectral_contrast = lb.feature.spectral_contrast(y=self.recorded_voice, sr=self.sampling_frequency)
         zero_crossings = lb.feature.zero_crossing_rate(self.recorded_voice)
         test_data = [mfccs, chroma, spectral_contrast, zero_crossings]
+        self.formatting_features_lists(test_data)
 
-        model = self.train_model()
-        prediction = model.predict(test_data)
-        print(prediction)
+        # model = self.train_model()
+        # prediction = model.predict(test_data)
+        # print(prediction)
     
     def train_model(self):
         k = KNeighborsClassifier(n_neighbors=1)
@@ -83,7 +84,9 @@ class ApplicationManger:
         filename = file_path[14:23]
         
         data_row = [mfccs, chroma, spectral_contrast, zero_crossings]
-        self.Dataset.append(data_row)
+        (formatted_data, features_lists_lengths,
+         features_lists_inner_lists_lengths) = self.formatting_features_lists(data_row)
+        self.Dataset.append(formatted_data)
         
         self.mfccs.append(mfccs)
         self.chroma.append(chroma)
@@ -107,5 +110,21 @@ class ApplicationManger:
         })
         df.to_csv('Dataset.csv', index=False)
 
+    @staticmethod
     def formatting_features_lists(self, list_to_be_formatted: list):
-        pass
+        formatted_list = []
+        features_lists_lengths = []
+        features_lists_inner_lists_lengths = []
+        for outer_list in list_to_be_formatted:
+            features_lists_lengths.append(len(outer_list))
+        for outer_list in list_to_be_formatted:
+            for inner_list in outer_list:
+                features_lists_inner_lists_lengths.append(len(inner_list))
+        for outer_list in list_to_be_formatted:
+            for inner_list in outer_list:
+                for value in inner_list:
+                    formatted_list.append(value)
+        print(f"features_lists_lengths = {features_lists_lengths},"
+              f" features_lists_inner_lists_lengths = {features_lists_inner_lists_lengths}")
+        return formatted_list, features_lists_lengths, features_lists_inner_lists_lengths
+
