@@ -1,4 +1,3 @@
-# Imports
 from PyQt5 import QtWidgets
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as Canvas
 import matplotlib
@@ -16,7 +15,7 @@ class MplCanvas(Canvas):
         plt.rcParams["figure.autolayout"] = True
         self.figure = plt.figure()
         self.figure.patch.set_facecolor('black')
-        self.axes = self.figure.add_subplot()
+        self.figure.add_subplot()
         Canvas.__init__(self, self.figure)
         Canvas.setSizePolicy(self, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
         Canvas.updateGeometry(self)
@@ -25,10 +24,13 @@ class MplCanvas(Canvas):
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=UserWarning)
             warnings.filterwarnings("ignore", category=RuntimeWarning)
-            self.axes.cla()
-            self.axes.specgram(signal, Fs=fs, cmap='viridis')
-            self.axes.set_ylim(0)
+            self.figure.clear()
+            axes = self.figure.add_subplot()
+            spectrogram = axes.specgram(signal, Fs=fs, cmap='inferno')
+            self.figure.colorbar(spectrogram[3], ax=axes)
+            axes.set_ylim(0)
             self.draw()
+
 
 class MplWidget(QtWidgets.QWidget):
     def __init__(self, parent=None):
