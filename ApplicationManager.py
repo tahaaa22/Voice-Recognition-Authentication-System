@@ -83,7 +83,7 @@ class ApplicationManger:
     
     def train_model(self):
         k = KNeighborsClassifier(n_neighbors=1)
-        return k.fit(self.database_features_array, self.file_names[:-1])
+        return k.fit(self.database_features_array, self.file_names)
 
     def calculate_sound_features(self, file_path, database_flag=True):
         log_mel_spectrogram_mean = []
@@ -108,7 +108,7 @@ class ApplicationManger:
         amplitude_envelope = self.calculate_amplitude_envelope(voice_data, 256, 64)
         root_mean_square = lb.feature.rms(y=voice_data, frame_length=256, hop_length=64)
         filename = file_path[14:23]
-        self.file_names.append(filename)
+
 
         for i in range(len(log_mel_spectrogram)):
             log_mel_spectrogram_mean.append(log_mel_spectrogram[i].mean())
@@ -137,6 +137,7 @@ class ApplicationManger:
                                         mfccs_var, log_mel_spectrogram_mean, log_mel_spectrogram_var))
         if database_flag:
             self.database_features_array.append(self.features_array)
+            self.file_names.append(filename)
 
 
 
