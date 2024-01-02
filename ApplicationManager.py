@@ -66,10 +66,10 @@ class ApplicationManger:
         zero_crossings = lb.feature.zero_crossing_rate(self.recorded_voice)
         
         features = [mfccs, chroma, spectral_contrast, zero_crossings]
+        test_data = []
         for feature in features:
             feature = self.formatting_features_lists(feature)
-        
-        test_data = [mfccs, chroma, spectral_contrast, zero_crossings]
+            test_data.append(feature)
 
         model = self.train_model()
         prediction = model.predict(test_data)
@@ -86,18 +86,16 @@ class ApplicationManger:
         spectral_contrast = lb.feature.spectral_contrast(y=voice_data, sr=sampling_frequency)
         zero_crossings = lb.feature.zero_crossing_rate(voice_data)
         filename = file_path[14:23]
-        
-
-        
          
         data_row = [mfccs, chroma, spectral_contrast, zero_crossings]
-        data_row = self.formatting_features_lists(data_row)
-        self.Dataset.append(data_row)
-        
-        self.mfccs.append(mfccs)
-        self.chroma.append(chroma)
-        self.spectral_contrast.append(spectral_contrast)
-        self.zero_crossings.append(zero_crossings)
+        for row in data_row:
+            row = self.formatting_features_lists(row)
+            self.Dataset.append(row)
+
+        self.mfccs.append(self.Dataset[0])
+        self.chroma.append(self.Dataset[1])
+        self.spectral_contrast.append(self.Dataset[2])
+        self.zero_crossings.append(self.Dataset[3])
         self.file_names.append(filename)
         
     def calculate_all(self):
@@ -117,11 +115,10 @@ class ApplicationManger:
         df.to_csv('Dataset.csv', index=False)
 
     @staticmethod
-    def formatting_features_lists(list1):
-        newlist = []
-        for mainlist in list1:
-            for sublist in mainlist:
-                for item in sublist:
-                    newlist.append(item)
-        return newlist
+    def formatting_features_lists(list_to_be_formatted: list):
+        formatted_list = []
+        for outer_list in list_to_be_formatted:
+            for value in outer_list:
+                formatted_list.append(value)
+        return formatted_list
 
