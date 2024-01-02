@@ -82,7 +82,7 @@ class ApplicationManger:
         print(prediction)
     
     def train_model(self):
-        k = KNeighborsClassifier(n_neighbors=1)
+        k = KNeighborsClassifier(n_neighbors=8)
         return k.fit(self.database_features_array, self.file_names)
 
     def calculate_sound_features(self, file_path, database_flag=True):
@@ -151,9 +151,11 @@ class ApplicationManger:
         # self.zero_crossings.append(self.Dataset[3])
 
     def creat_database(self):
-        for word in ("Door", "Access"):
+        for word in ("Door", "Access", "Gate"):
             for i in range(1, 11):
                 self.calculate_sound_features(f"Voice Dataset/Omar_{word} ({i}).ogg")
+            for i in range(1, 11):
+                self.calculate_sound_features(f"Voice Dataset/Youssef_{word} ({i}).ogg")
         df = pd.DataFrame({
             'Features': self.database_features_array,
             'result': self.file_names
