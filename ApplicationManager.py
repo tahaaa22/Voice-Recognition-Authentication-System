@@ -121,11 +121,11 @@ class ApplicationManger:
             
             self.recorded_voice = sd.rec(frames=int(self.sampling_frequency*duration), samplerate=self.sampling_frequency,
                                          channels=1, blocking=True, dtype='int16')
-            sf.write(f"Voice Dataset/Omar_Door ({self.c}).ogg", self.recorded_voice, self.sampling_frequency)
+            sf.write(f"Voice Dataset/Hazem_Access ({self.c}).ogg", self.recorded_voice, self.sampling_frequency)
             self.recorded_voice, sampling_frequency = lb.load("output.ogg")
             self.ui.SpectrogramWidget.canvas.plot_spectrogram(self.recorded_voice, sampling_frequency)
 
-            print(f"Voice Dataset/Omar_Door ({self.c}).ogg")
+            print(f"Voice Dataset/Hazem_Access ({self.c}).ogg")
             self.c += 1
 
             # self.calculate_sound_features("output.ogg",False)
