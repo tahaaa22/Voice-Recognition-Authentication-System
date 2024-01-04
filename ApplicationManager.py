@@ -26,6 +26,7 @@ class ApplicationManger:
         self.features_array = None
         self.database_features_array = []
         self.file_names = []
+        self.c = 1
 
     def switch_modes(self):
         self.fingerprint_mode = not self.fingerprint_mode 
@@ -33,11 +34,11 @@ class ApplicationManger:
     def create_database(self):
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=UserWarning)
-            #for name in ("Omar","Youssef","Hazem","Taha"):
-            for word in ("Door", "Access", "Gate"):
-                for i in range(1, 31):
-                    self.calculate_sound_features(f"Voice Dataset/Omar_{word} ({i}).ogg")
-                    
+            for name in ("Omar","Hazem"):
+                #for word in ("Key"):
+                    for i in range(1, 31):
+                        self.calculate_sound_features(f"Voice Dataset/{name}_Key ({i}).ogg")
+                        
             df = pd.DataFrame({
                 'Features': self.database_features_array,
                 'result': self.file_names
@@ -90,11 +91,12 @@ class ApplicationManger:
             tone_mean.append(tone[i].mean())
             tone_var.append(tone[i].var())
          
-        self.features_array = np.hstack((mean(amplitude_envelope), var(amplitude_envelope), mean(root_mean_square),
-        var(root_mean_square), mean(spectral_bandwidth), var(spectral_bandwidth), tone_mean, tone_var,
+        self.features_array = np.hstack((
         chroma_mean, chroma_var, cqt_mean, cqt_var, mfccs_mean,
                                         mfccs_var, log_mel_spectrogram_mean, log_mel_spectrogram_var))
         
+        # mean(amplitude_envelope), var(amplitude_envelope), mean(root_mean_square),
+        # var(root_mean_square), mean(spectral_bandwidth), var(spectral_bandwidth), tone_mean, tone_var,
         
         if database_flag:
             self.database_features_array.append(self.features_array)
@@ -119,19 +121,23 @@ class ApplicationManger:
             
             self.recorded_voice = sd.rec(frames=int(self.sampling_frequency*duration), samplerate=self.sampling_frequency,
                                          channels=1, blocking=True, dtype='int16')
-            sf.write("output.ogg", self.recorded_voice, self.sampling_frequency)
+            sf.write(f"Voice Dataset/Youssef_Door ({self.c}).ogg", self.recorded_voice, self.sampling_frequency)
             self.recorded_voice, sampling_frequency = lb.load("output.ogg")
             self.ui.SpectrogramWidget.canvas.plot_spectrogram(self.recorded_voice, sampling_frequency)
 
-            self.calculate_sound_features("output.ogg",False)
-            model = self.train_model()
-            rf_probabilities = model.predict_proba(self.features_array.reshape(1,-1))
-            rf_predictions = model.predict(self.features_array.reshape(1,-1))
+            print(f"Voice Dataset/Youssef_Door ({self.c}).ogg")
+            self.c += 1
 
-            print("Probability Scores for the First Test Sample:")
-            print(rf_probabilities)
-            print(rf_predictions)
-            self.check_matching(rf_probabilities[0])
+            # self.calculate_sound_features("output.ogg",False)
+            # model = self.train_model()
+            # rf_probabilities = model.predict_proba(self.features_array.reshape(1,-1))
+            # rf_predictions = model.predict(self.features_array.reshape(1,-1))
+
+
+            # print("Probability Scores for the First Test Sample:")
+            # print(rf_probabilities)
+            # print(rf_predictions)
+            #self.check_matching(rf_probabilities[0])
             
             #print(model.predict(self.features_array.reshape(1,-1)))
             #print(model2.predict(self.features_array.reshape(1,-1)))
