@@ -6,6 +6,9 @@ import numpy as np
 from numpy import mean, var
 import pandas as pd
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.tree import DecisionTreeClassifier
 
 class ApplicationManger:
     def __init__(self, ui):
@@ -22,11 +25,6 @@ class ApplicationManger:
         self.wrong_mark_icon = self.wrong_mark_icon.scaledToWidth(50)
         self.features_array = None
         self.database_features_array = []
-        # self.Dataset = []
-        # self.mfccs = []
-        # self.chroma = []
-        # self.spectral_contrast = []
-        # self.zero_crossings = []
         self.file_names = []
 
     def switch_modes(self):
@@ -38,14 +36,20 @@ class ApplicationManger:
             
             self.recorded_voice = sd.rec(frames=int(self.sampling_frequency*duration), samplerate=self.sampling_frequency,
                                          channels=1, blocking=True, dtype='int16')
-            sf.write("output.wav", self.recorded_voice, self.sampling_frequency)
-            self.recorded_voice, sampling_frequency = lb.load("output.wav")
+            sf.write("output.ogg", self.recorded_voice, self.sampling_frequency)
+            self.recorded_voice, sampling_frequency = lb.load("output.ogg")
             self.ui.SpectrogramWidget.canvas.plot_spectrogram(self.recorded_voice, sampling_frequency)
 
-            self.calculate_sound_features("D:\Education\Digital Signal Processing\Tasks\Task 5\Voice-Recognition-Authentication-System\output.wav",False)
-            model = self.train_model()
-            prediction = model.predict(self.features_array.reshape(1, -1))
-            print(prediction)
+            #self.calculate_sound_features("output.ogg",False)
+            
+        #     X_train, X_test, y_train, y_test = train_test_split(
+        # self.database_features_array, self.file_names, test_size=0.5)
+            
+            model1,model2 = self.train_model()
+            print(model1.predict(self.features_array.reshape(1,-1)))
+            print(model2.predict(self.features_array.reshape(1,-1)))
+            # accuracy = model.score(X_test, y_test)
+            # print(accuracy)
 
     def display_text(self):
         self.ui.VoiceRecognizedLabel.setText(self.recorded_voice_text)
@@ -63,27 +67,12 @@ class ApplicationManger:
             if not pixmap_added:
                 self.ui.AccessLabel.setPixmap(self.wrong_mark_icon)
                 self.ui.label_6.setText("Access Denied")
-
-    def extract_features(self):
-        mfccs = lb.feature.mfcc(y=self.recorded_voice, sr=self.sampling_frequency)
-        chroma = lb.feature.chroma_stft(y=self.recorded_voice, sr=self.sampling_frequency)
-        spectral_contrast = lb.feature.spectral_contrast(y=self.recorded_voice, sr=self.sampling_frequency)
-        zero_crossings = lb.feature.zero_crossing_rate(self.recorded_voice)
-        
-        features = [mfccs, chroma, spectral_contrast, zero_crossings]
-        test_data = []
-        test_data = self.formatting_features_lists(features)
-        # for feature in features:
-        #     feature = self.formatting_features_lists(feature)
-        # test_data.append(feature)
-
-        model = self.train_model()
-        prediction = model.predict(test_data)
-        print(prediction)
     
     def train_model(self):
-        k = KNeighborsClassifier(n_neighbors=8)
-        return k.fit(self.database_features_array, self.file_names)
+        k = KNeighborsClassifier(n_neighbors=5)
+        dt_classifier = DecisionTreeClassifier(random_state=100)
+        
+        return dt_classifier.fit(self.database_features_array, self.file_names), k.fit(self.database_features_array, self.file_names)
 
     def calculate_sound_features(self, file_path, database_flag=True):
         log_mel_spectrogram_mean = []
@@ -103,10 +92,10 @@ class ApplicationManger:
         log_mel_spectrogram = lb.power_to_db(
             lb.feature.melspectrogram(y=voice_data, sr=sampling_frequency, n_fft=256, hop_length=64, n_mels=13))
         constant_q_transform = np.abs(lb.cqt(y=voice_data, sr=sampling_frequency))
-        tone = lb.feature.tonnetz(y=voice_data, sr=sampling_frequency)
-        spectral_bandwidth = lb.feature.spectral_bandwidth(y=voice_data, sr=sampling_frequency, n_fft=256, hop_length=64)
-        amplitude_envelope = self.calculate_amplitude_envelope(voice_data, 256, 64)
-        root_mean_square = lb.feature.rms(y=voice_data, frame_length=256, hop_length=64)
+        # tone = lb.feature.tonnetz(y=voice_data, sr=sampling_frequency)
+        # spectral_bandwidth = lb.feature.spectral_bandwidth(y=voice_data, sr=sampling_frequency, n_fft=256, hop_length=64)
+        # amplitude_envelope = self.calculate_amplitude_envelope(voice_data, 256, 64)
+        # root_mean_square = lb.feature.rms(y=voice_data, frame_length=256, hop_length=64)
         filename = file_path[14:23]
 
 
@@ -127,49 +116,34 @@ class ApplicationManger:
             chroma_var.append(chroma[i].var())
 
         # Calculate mean and variance of each frame of tone
-        for i in range(len(tone)):
-            tone_mean.append(tone[i].mean())
-            tone_var.append(tone[i].var())
+        # for i in range(len(tone)):
+        #     tone_mean.append(tone[i].mean())
+        #     tone_var.append(tone[i].var())
          
-        self.features_array = np.hstack((mean(amplitude_envelope), var(amplitude_envelope), mean(root_mean_square),
-                                        var(root_mean_square), mean(spectral_bandwidth), var(spectral_bandwidth),
-                                        chroma_mean, chroma_var, tone_mean, tone_var, cqt_mean, cqt_var, mfccs_mean,
+        self.features_array = np.hstack((chroma_mean, chroma_var, cqt_mean, cqt_var, mfccs_mean,
                                         mfccs_var, log_mel_spectrogram_mean, log_mel_spectrogram_var))
+        
+        # mean(amplitude_envelope), var(amplitude_envelope), mean(root_mean_square),
+        # var(root_mean_square), mean(spectral_bandwidth), var(spectral_bandwidth), tone_mean, tone_var,
         if database_flag:
             self.database_features_array.append(self.features_array)
             self.file_names.append(filename)
 
-
-
-        # for row in data_row:
-        #     row = self.formatting_features_lists(row)
-        # self.Dataset.append(data_row)
-
-        # self.mfccs.append(self.Dataset[0])
-        # self.chroma.append(self.Dataset[1])
-        # self.spectral_contrast.append(self.Dataset[2])
-        # self.zero_crossings.append(self.Dataset[3])
-
-    def creat_database(self):
+    def create_database(self):
+        #for name in ("Omar","Youssef","Hazem","Taha"):
         for word in ("Door", "Access", "Gate"):
-            for i in range(1, 11):
+            for i in range(1, 31):
                 self.calculate_sound_features(f"Voice Dataset/Omar_{word} ({i}).ogg")
-            for i in range(1, 11):
-                self.calculate_sound_features(f"Voice Dataset/Youssef_{word} ({i}).ogg")
+                
         df = pd.DataFrame({
             'Features': self.database_features_array,
             'result': self.file_names
         })
         df.to_csv('Dataset.csv', index=False)
-        for feature in self.database_features_array:
-            print(len(feature))
 
     @staticmethod
     def formatting_features_lists(list_to_be_formatted: list):
         formatted_list = []
-        # for outer_list in list_to_be_formatted:
-        #     for value in outer_list:
-        #         formatted_list.append(value)
         for outer_list in list_to_be_formatted:
             for inner_lists in outer_list:
                 for value in inner_lists:
