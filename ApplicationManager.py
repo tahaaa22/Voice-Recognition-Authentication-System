@@ -1,3 +1,4 @@
+from PyQt5 import QtGui
 from PyQt5.QtGui import QPixmap
 import sounddevice as sd
 import soundfile as sf
@@ -17,16 +18,19 @@ class ApplicationManger:
         self.recorded_voice_text = ""
         self.recorded_voice = None
         self.sampling_frequency = 44100
+        
         self.pass_sentences = ["grant me access", "open middle door", "unlock the gate"]
-        self.pass_sentences_progress_bars = [ui.grant_progressBar, ui.open_progressBar, ui.unlock_progressBar]
-        self.right_mark_icon = QPixmap("Assets/Correct.png")
-        self.right_mark_icon = self.right_mark_icon.scaledToWidth(50)
-        self.wrong_mark_icon = QPixmap("Assets/Wrong.png")
-        self.wrong_mark_icon = self.wrong_mark_icon.scaledToWidth(50)
+        self.pass_sentences_progress_bars = [ui.Access_progressBar, ui.Door_progressBar, ui.Key_progressBar]
+        self.people_progress_bars = [ui.Hazem_Bar,ui.Omar_Bar,ui.Taha_Bar,ui.Youssef_Bar]
+        
         self.features_array = None
         self.database_features_array = []
         self.file_names = []
         self.c = 1
+
+        self.right_mark_icon = QPixmap("Assets/Correct.png").scaledToWidth(50)
+        self.wrong_mark_icon = QPixmap("Assets/Wrong.png").scaledToWidth(50)
+        self.icons = [[self.wrong_mark_icon,"Denied"],[self.right_mark_icon,"Authorized"]]
 
     def switch_modes(self):
         self.fingerprint_mode = not self.fingerprint_mode 
@@ -34,11 +38,11 @@ class ApplicationManger:
     def create_database(self):
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=UserWarning)
-            for name in ("Omar","Hazem"):
-                #for word in ("Key"):
+            for name in ("Hazem","Omar","Taha","Youssef"):
+                for word in ("Access","Door","key"):
                     for i in range(1, 31):
-                        self.calculate_sound_features(f"Voice Dataset/{name}_Key ({i}).ogg")
-                        
+                        self.calculate_sound_features(f"Voice Dataset/{name}_{word} ({i}).ogg")
+                            
             df = pd.DataFrame({
                 'Features': self.database_features_array,
                 'result': self.file_names
@@ -113,58 +117,48 @@ class ApplicationManger:
         result = rf_classifier.fit(self.database_features_array, self.file_names)
 
         return result
-    
+
     def record_voice(self):
-        self.check_matching([0,0,0])
         if self.ui.Public_RadioButton.isChecked:
             duration = 3  # seconds
             
             self.recorded_voice = sd.rec(frames=int(self.sampling_frequency*duration), samplerate=self.sampling_frequency,
                                          channels=1, blocking=True, dtype='int16')
-            sf.write(f"Voice Dataset/Hazem_Access ({self.c}).ogg", self.recorded_voice, self.sampling_frequency)
+            sf.write("output.ogg", self.recorded_voice, self.sampling_frequency)
             self.recorded_voice, sampling_frequency = lb.load("output.ogg")
             self.ui.SpectrogramWidget.canvas.plot_spectrogram(self.recorded_voice, sampling_frequency)
-
-            print(f"Voice Dataset/Hazem_Access ({self.c}).ogg")
-            self.c += 1
-
-            # self.calculate_sound_features("output.ogg",False)
-            # model = self.train_model()
-            # rf_probabilities = model.predict_proba(self.features_array.reshape(1,-1))
-            # rf_predictions = model.predict(self.features_array.reshape(1,-1))
-
-
-            # print("Probability Scores for the First Test Sample:")
-            # print(rf_probabilities)
-            # print(rf_predictions)
-            #self.check_matching(rf_probabilities[0])
             
-            #print(model.predict(self.features_array.reshape(1,-1)))
-            #print(model2.predict(self.features_array.reshape(1,-1)))
-            # accuracy = model.score(X_test, y_test)
-            # print(accuracy)
+            self.calculate_sound_features("output.ogg",False)
+            model = self.train_model()
+            rf_probabilities = model.predict_proba(self.features_array.reshape(1,-1))
+            rf_predictions = model.predict(self.features_array.reshape(1,-1))
+
+            print("Probability Scores for the First Test Sample:")
+            print(rf_probabilities)
+            print(rf_predictions)
+
+            self.check_matching(rf_probabilities[0])
 
     def check_matching(self,probs):
-        for i in range(len(self.pass_sentences_progress_bars)):
-            self.pass_sentences_progress_bars[i].setValue(int(probs[i]*100))
+        for i in range(3):
+            sum = 0
+            for j in range(4):
+                sum += probs[i + j*3]    
+            self.pass_sentences_progress_bars[i].setValue(int(sum*100))
+
+        for i in range(4):
+            sum = 0
+            for j in range(3):
+                sum += probs[i*3 : i*3 + 2]
+            self.people_progress_bars[i].setValue(int(sum*100))
 
     def display_text(self):
         self.ui.VoiceRecognizedLabel.setText(self.recorded_voice_text)
 
-    def check_pass_sentence(self):
-        pixmap_added = False
-        for i in range(3):
-            if self.recorded_voice_text == self.pass_sentences[i]:
-                self.pass_sentences_progress_bars[i].setValue(100)
-                self.ui.AccessLabel.setPixmap(self.right_mark_icon)
-                self.ui.label_6.setText("Access Authorized")
-                pixmap_added = True
-            else:
-                self.pass_sentences_progress_bars[i].setValue(0)
-            if not pixmap_added:
-                self.ui.AccessLabel.setPixmap(self.wrong_mark_icon)
-                self.ui.label_6.setText("Access Denied")
-    
+    def set_icon(self,flag):
+        self.ui.AccessLabel.setPixmap(self.icons[flag][0])
+        self.ui.label_6.setText(f"Access {self.icons[flag][1]}")
+
     @staticmethod
     def formatting_features_lists(list_to_be_formatted: list):
         formatted_list = []
