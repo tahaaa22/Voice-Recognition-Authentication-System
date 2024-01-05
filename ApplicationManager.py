@@ -4,35 +4,29 @@ import soundfile as sf
 import librosa as lb
 import numpy as np
 from numpy import mean, var
-import pandas as pd
-from sklearn.neighbors import KNeighborsClassifier
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.tree import DecisionTreeClassifier
 import warnings
+
 
 class ApplicationManger:
     def __init__(self, ui):
         self.ui = ui
         self.recorded_voice = None
-        self.sampling_frequency = 44100
-        
         self.pass_sentences_progress_bars = [ui.Access_progressBar, ui.Door_progressBar, ui.Key_progressBar]
-        self.people_progress_bars = [ui.Hazem_Bar,ui.Omar_Bar,ui.Taha_Bar,ui.Youssef_Bar]
-        
+        self.people_progress_bars = [ui.Hazem_Bar, ui.Omar_Bar, ui.Taha_Bar, ui.Youssef_Bar]
         self.features_array = None
         self.database_features_array = []
         self.file_names = []
         self.c = 1
-
         self.right_mark_icon = QPixmap("Assets/Correct.png").scaledToWidth(50)
         self.wrong_mark_icon = QPixmap("Assets/Wrong.png").scaledToWidth(50)
-        self.icons = [[self.wrong_mark_icon,"Denied"],[self.right_mark_icon,"Authorized"]]
+        self.icons = [[self.wrong_mark_icon, "Denied"], [self.right_mark_icon, "Authorized"]]
     
     def create_database(self):
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=UserWarning)
-            for name in ("Hazem","Omar","Taha","Youssef"):
-                for word in ("Access","Door","key"):
+            for name in ("Hazem", "Omar", "Taha", "Youssef"):
+                for word in ("Access", "Door", "key"):
                     for i in range(1, 31):
                         self.calculate_sound_features(f"Voice Dataset/{name}_{word} ({i}).ogg")
 
@@ -49,17 +43,17 @@ class ApplicationManger:
         tone_var = []
 
         voice_data, sampling_frequency = lb.load(file_path)
-        mfccs = lb.feature.mfcc(y=voice_data, sr=sampling_frequency, n_fft=256, hop_length=64, n_mels=13)
-        chroma = lb.feature.chroma_stft(y=voice_data, sr=sampling_frequency, n_fft=256, hop_length=64)
+        mfccs = lb.feature.mfcc(y=voice_data, sr=sampling_frequency, n_fft=1024, hop_length=512, n_mels=13)
+        chroma = lb.feature.chroma_stft(y=voice_data, sr=sampling_frequency, n_fft=1024, hop_length=512)
         log_mel_spectrogram = lb.power_to_db(
-            lb.feature.melspectrogram(y=voice_data, sr=sampling_frequency, n_fft=256, hop_length=64, n_mels=13))
+            lb.feature.melspectrogram(y=voice_data, sr=sampling_frequency, n_fft=1024, hop_length=512, n_mels=13))
         constant_q_transform = np.abs(lb.cqt(y=voice_data, sr=sampling_frequency))
         tone = lb.feature.tonnetz(y=voice_data, sr=sampling_frequency)
-        spectral_bandwidth = lb.feature.spectral_bandwidth(y=voice_data, sr=sampling_frequency, n_fft=256, hop_length=64)
-        amplitude_envelope = self.calculate_amplitude_envelope(voice_data, 256, 64)
-        root_mean_square = lb.feature.rms(y=voice_data, frame_length=256, hop_length=64)
+        spectral_bandwidth = lb.feature.spectral_bandwidth(y=voice_data, sr=sampling_frequency,
+                                                           n_fft=1024, hop_length=512)
+        amplitude_envelope = self.calculate_amplitude_envelope(voice_data, 1024, 512)
+        root_mean_square = lb.feature.rms(y=voice_data, frame_length=1024, hop_length=512)
         filename = file_path[14:23]
-
 
         for i in range(len(log_mel_spectrogram)):
             log_mel_spectrogram_mean.append(log_mel_spectrogram[i].mean())
@@ -77,14 +71,13 @@ class ApplicationManger:
             chroma_mean.append(chroma[i].mean())
             chroma_var.append(chroma[i].var())
 
-        #Calculate mean and variance of each frame of tone
         for i in range(len(tone)):
             tone_mean.append(tone[i].mean())
             tone_var.append(tone[i].var())
          
         self.features_array = np.hstack((mean(amplitude_envelope), var(amplitude_envelope), mean(root_mean_square),
-        var(root_mean_square), mean(spectral_bandwidth), var(spectral_bandwidth), tone_mean, tone_var,
-        chroma_mean, chroma_var, cqt_mean, cqt_var, mfccs_mean,
+                                        var(root_mean_square), mean(spectral_bandwidth), var(spectral_bandwidth),
+                                        tone_mean, tone_var, chroma_mean, chroma_var, cqt_mean, cqt_var, mfccs_mean,
                                         mfccs_var, log_mel_spectrogram_mean, log_mel_spectrogram_var))
         
         if database_flag:
@@ -92,73 +85,58 @@ class ApplicationManger:
             self.file_names.append(filename)
 
     def train_model(self):
-        # kn_classifier = KNeighborsClassifier(n_neighbors=5)
-        # kn_classifier.fit(self.database_features_array, self.file_names)
-
-        # dt_classifier = DecisionTreeClassifier(random_state=42)
-        # dt_classifier.fit(self.database_features_array, self.file_names)
 
         rf_classifier = RandomForestClassifier(n_estimators=100, random_state=42)
         result = rf_classifier.fit(self.database_features_array, self.file_names)
-
         return result
 
     def record_voice(self):
         duration = 3  # seconds
         
-        self.recorded_voice = sd.rec(frames=int(self.sampling_frequency*duration), samplerate=self.sampling_frequency,
-                                        channels=1, blocking=True, dtype='int16')
-        sf.write("output.ogg", self.recorded_voice, self.sampling_frequency)
+        self.recorded_voice = sd.rec(frames=int(44100*duration), samplerate=44100,
+                                     channels=1, blocking=True, dtype='int16')
+        sf.write("output.ogg", self.recorded_voice, 44100)
         self.recorded_voice, sampling_frequency = lb.load("output.ogg")
         self.ui.SpectrogramWidget.canvas.plot_spectrogram(self.recorded_voice, sampling_frequency)
         
-        self.calculate_sound_features("output.ogg",False)
+        self.calculate_sound_features("output.ogg", False)
         model = self.train_model()
-        rf_probabilities = model.predict_proba(self.features_array.reshape(1,-1))
+        rf_probabilities = model.predict_proba(self.features_array.reshape(1, -1))
         self.check_matching(rf_probabilities[0])
 
-    def check_matching(self,probs):
-        statment_sums = []
+    def check_matching(self, probs):
+        statement_sums = []
         people_sums = []
         for i in range(3):
-            sum = 0
+            probabilities_sum = 0
             for j in range(4):
-                sum += probs[i + j*3]  
-            statment_sums.append(sum)  
-            self.pass_sentences_progress_bars[i].setValue(int(sum*100))
+                probabilities_sum += probs[i + j*3]
+            statement_sums.append(probabilities_sum)
+            self.pass_sentences_progress_bars[i].setValue(int(probabilities_sum*100))
 
         for i in range(4):
-            sum = 0
+            probabilities_sum = 0
             for j in range(3):
-                sum += probs[i*3 + j]
-            people_sums.append(sum)    
-            self.people_progress_bars[i].setValue(int(sum*100))
-        self.verify_sound(statment_sums,people_sums)
-        
-    def verify_sound(self,statment_sums,people_sums):
-        if self.ui.Low_RadioButton.isChecked():
-            if max(statment_sums) > 0.5:
-                self.set_icon(1)
-            else:
-                self.set_icon(0)
-        else:
-            if max(people_sums) == people_sums[1] and max(statment_sums) > 0.5:
-                self.set_icon(1)
-            else:
-                self.set_icon(0)
+                probabilities_sum += probs[i*3 + j]
+            people_sums.append(probabilities_sum)
+            self.people_progress_bars[i].setValue(int(probabilities_sum*100))
 
-    def set_icon(self,flag):
+        self.verify_sound(statement_sums, people_sums)
+        
+    def verify_sound(self, statement_sums, people_sums):
+        access_flag = 0
+        if self.ui.Low_RadioButton.isChecked():
+            if max(statement_sums) > 0.4:
+                access_flag = 1
+        else:
+            if max(people_sums) == people_sums[1] and max(statement_sums) > 0.4:
+                access_flag = 1
+
+        self.set_icon(access_flag)
+
+    def set_icon(self, flag):
         self.ui.AccessLabel.setPixmap(self.icons[flag][0])
         self.ui.label_6.setText(f"Access {self.icons[flag][1]}")
-
-    @staticmethod
-    def formatting_features_lists(list_to_be_formatted: list):
-        formatted_list = []
-        for outer_list in list_to_be_formatted:
-            for inner_lists in outer_list:
-                for value in inner_lists:
-                    formatted_list.append(value)
-        return formatted_list
 
     @staticmethod
     def calculate_amplitude_envelope(audio, frame_length, hop_length):
