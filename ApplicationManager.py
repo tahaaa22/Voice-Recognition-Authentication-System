@@ -1,4 +1,3 @@
-from PyQt5 import QtGui
 from PyQt5.QtGui import QPixmap
 import sounddevice as sd
 import soundfile as sf
@@ -14,12 +13,9 @@ import warnings
 class ApplicationManger:
     def __init__(self, ui):
         self.ui = ui
-        self.fingerprint_mode = False
-        self.recorded_voice_text = ""
         self.recorded_voice = None
         self.sampling_frequency = 44100
         
-        self.pass_sentences = ["grant me access", "open middle door", "unlock the gate"]
         self.pass_sentences_progress_bars = [ui.Access_progressBar, ui.Door_progressBar, ui.Key_progressBar]
         self.people_progress_bars = [ui.Hazem_Bar,ui.Omar_Bar,ui.Taha_Bar,ui.Youssef_Bar]
         
@@ -31,9 +27,6 @@ class ApplicationManger:
         self.right_mark_icon = QPixmap("Assets/Correct.png").scaledToWidth(50)
         self.wrong_mark_icon = QPixmap("Assets/Wrong.png").scaledToWidth(50)
         self.icons = [[self.wrong_mark_icon,"Denied"],[self.right_mark_icon,"Authorized"]]
-
-    def switch_modes(self):
-        self.fingerprint_mode = not self.fingerprint_mode 
     
     def create_database(self):
         with warnings.catch_warnings():
@@ -42,12 +35,6 @@ class ApplicationManger:
                 for word in ("Access","Door","key"):
                     for i in range(1, 31):
                         self.calculate_sound_features(f"Voice Dataset/{name}_{word} ({i}).ogg")
-                            
-            df = pd.DataFrame({
-                'Features': self.database_features_array,
-                'result': self.file_names
-            })
-            df.to_csv('Dataset.csv', index=False)
 
     def calculate_sound_features(self, file_path, database_flag=True):
         log_mel_spectrogram_mean = []
@@ -95,12 +82,10 @@ class ApplicationManger:
             tone_mean.append(tone[i].mean())
             tone_var.append(tone[i].var())
          
-        self.features_array = np.hstack((
+        self.features_array = np.hstack((mean(amplitude_envelope), var(amplitude_envelope), mean(root_mean_square),
+        var(root_mean_square), mean(spectral_bandwidth), var(spectral_bandwidth), tone_mean, tone_var,
         chroma_mean, chroma_var, cqt_mean, cqt_var, mfccs_mean,
                                         mfccs_var, log_mel_spectrogram_mean, log_mel_spectrogram_var))
-        
-        # mean(amplitude_envelope), var(amplitude_envelope), mean(root_mean_square),
-        # var(root_mean_square), mean(spectral_bandwidth), var(spectral_bandwidth), tone_mean, tone_var,
         
         if database_flag:
             self.database_features_array.append(self.features_array)
@@ -119,41 +104,48 @@ class ApplicationManger:
         return result
 
     def record_voice(self):
-        if self.ui.Public_RadioButton.isChecked:
-            duration = 3  # seconds
-            
-            self.recorded_voice = sd.rec(frames=int(self.sampling_frequency*duration), samplerate=self.sampling_frequency,
-                                         channels=1, blocking=True, dtype='int16')
-            sf.write("output.ogg", self.recorded_voice, self.sampling_frequency)
-            self.recorded_voice, sampling_frequency = lb.load("output.ogg")
-            self.ui.SpectrogramWidget.canvas.plot_spectrogram(self.recorded_voice, sampling_frequency)
-            
-            self.calculate_sound_features("output.ogg",False)
-            model = self.train_model()
-            rf_probabilities = model.predict_proba(self.features_array.reshape(1,-1))
-            rf_predictions = model.predict(self.features_array.reshape(1,-1))
-
-            print("Probability Scores for the First Test Sample:")
-            print(rf_probabilities)
-            print(rf_predictions)
-
-            self.check_matching(rf_probabilities[0])
+        duration = 3  # seconds
+        
+        self.recorded_voice = sd.rec(frames=int(self.sampling_frequency*duration), samplerate=self.sampling_frequency,
+                                        channels=1, blocking=True, dtype='int16')
+        sf.write("output.ogg", self.recorded_voice, self.sampling_frequency)
+        self.recorded_voice, sampling_frequency = lb.load("output.ogg")
+        self.ui.SpectrogramWidget.canvas.plot_spectrogram(self.recorded_voice, sampling_frequency)
+        
+        self.calculate_sound_features("output.ogg",False)
+        model = self.train_model()
+        rf_probabilities = model.predict_proba(self.features_array.reshape(1,-1))
+        self.check_matching(rf_probabilities[0])
 
     def check_matching(self,probs):
+        statment_sums = []
+        people_sums = []
         for i in range(3):
             sum = 0
             for j in range(4):
-                sum += probs[i + j*3]    
+                sum += probs[i + j*3]  
+            statment_sums.append(sum)  
             self.pass_sentences_progress_bars[i].setValue(int(sum*100))
 
         for i in range(4):
             sum = 0
             for j in range(3):
-                sum += probs[i*3 : i*3 + 2]
+                sum += probs[i*3 + j]
+            people_sums.append(sum)    
             self.people_progress_bars[i].setValue(int(sum*100))
-
-    def display_text(self):
-        self.ui.VoiceRecognizedLabel.setText(self.recorded_voice_text)
+        self.verify_sound(statment_sums,people_sums)
+        
+    def verify_sound(self,statment_sums,people_sums):
+        if self.ui.Low_RadioButton.isChecked():
+            if max(statment_sums) > 0.5:
+                self.set_icon(1)
+            else:
+                self.set_icon(0)
+        else:
+            if max(people_sums) == people_sums[1] and max(statment_sums) > 0.5:
+                self.set_icon(1)
+            else:
+                self.set_icon(0)
 
     def set_icon(self,flag):
         self.ui.AccessLabel.setPixmap(self.icons[flag][0])
