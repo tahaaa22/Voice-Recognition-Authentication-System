@@ -86,13 +86,12 @@ class ApplicationManger:
 
     def train_model(self):
 
-        rf_classifier = RandomForestClassifier(n_estimators=100, random_state=42)
+        rf_classifier = RandomForestClassifier(n_estimators=300, criterion="entropy", bootstrap=False, warm_start=True)
         result = rf_classifier.fit(self.database_features_array, self.file_names)
         return result
 
     def record_voice(self):
         duration = 3  # seconds
-        
         self.recorded_voice = sd.rec(frames=int(44100*duration), samplerate=44100,
                                      channels=1, blocking=True, dtype='int16')
         sf.write("output.ogg", self.recorded_voice, 44100)
