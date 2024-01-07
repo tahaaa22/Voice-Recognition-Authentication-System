@@ -527,7 +527,7 @@ if __name__ == "__main__":
     ui = Ui_Voice_Recognizer()
     ui.setupUi(Voice_Recognizer)
     MAESTRO = ApplicationManger(ui)
-    # MAESTRO.create_database()
+    MAESTRO.create_database()
     MAESTRO.switch_modes(False)
     Voice_Recognizer.show()
     sys.exit(app.exec_())
