@@ -89,7 +89,8 @@ class ApplicationManger:
 
     def train_model(self):
 
-        rf_classifier = RandomForestClassifier(n_estimators=300, criterion="entropy", bootstrap=False, warm_start=True)
+        rf_classifier = RandomForestClassifier(n_estimators=300, criterion="entropy", bootstrap=True, warm_start=True,
+                                               random_state=42)
         result = rf_classifier.fit(self.database_features_array, self.file_names)
         return result
 
@@ -131,8 +132,10 @@ class ApplicationManger:
             if max(statement_sums) > 0.4:
                 access_flag = 1
         else:
-            if max(people_sums) == people_sums[1] and max(statement_sums) > 0.4:
-                access_flag = 1
+            for i in range(4):
+                if (max(people_sums) == people_sums[i] and max(statement_sums) > 0.4
+                        and self.people_check_boxes[i].isChecked()):
+                    access_flag = 1
 
         self.set_icon(access_flag)
 
