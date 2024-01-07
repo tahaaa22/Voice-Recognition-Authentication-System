@@ -12,8 +12,11 @@ class ApplicationManger:
     def __init__(self, ui):
         self.ui = ui
         self.recorded_voice = None
-        self.pass_sentences_progress_bars = [ui.Access_progressBar, ui.Door_progressBar, ui.Key_progressBar]
-        self.people_progress_bars = [ui.Hazem_Bar, ui.Omar_Bar, ui.Taha_Bar, ui.Youssef_Bar]
+        self.pass_sentences_progress_bars = [ui.Grant_Me_Access_ProgressBar, ui.Open_Middle_Door_ProgressBar,
+                                             ui.Release_Entrance_Key_ProgressBar]
+        self.people_progress_bars = [ui.Hazem_ProgressBar, ui.Omar_ProgressBar, ui.Ahmed_ProgressBar,
+                                     ui.Youssef_ProgressBar]
+        self.people_check_boxes = [ui.Hazem_CheckBox, ui.Omar_CheckBox, ui.Ahmed_CheckBox, ui.Youssef_CheckBox]
         self.features_array = None
         self.database_features_array = []
         self.file_names = []
@@ -96,7 +99,7 @@ class ApplicationManger:
                                      channels=1, blocking=True, dtype='int16')
         sf.write("output.ogg", self.recorded_voice, 44100)
         self.recorded_voice, sampling_frequency = lb.load("output.ogg")
-        self.ui.SpectrogramWidget.canvas.plot_spectrogram(self.recorded_voice, sampling_frequency)
+        self.ui.Spectrogram.canvas.plot_spectrogram(self.recorded_voice, sampling_frequency)
         
         self.calculate_sound_features("output.ogg", False)
         model = self.train_model()
@@ -124,7 +127,7 @@ class ApplicationManger:
         
     def verify_sound(self, statement_sums, people_sums):
         access_flag = 0
-        if self.ui.Low_RadioButton.isChecked():
+        if self.ui.Security_Voice_Code_RadioButton.isChecked():
             if max(statement_sums) > 0.4:
                 access_flag = 1
         else:
@@ -134,9 +137,13 @@ class ApplicationManger:
         self.set_icon(access_flag)
 
     def set_icon(self, flag):
-        self.ui.AccessLabel.setPixmap(self.icons[flag][0])
-        self.ui.label_6.setText(f"Access {self.icons[flag][1]}")
+        self.ui.Access_Icon_Label.setPixmap(self.icons[flag][0])
+        self.ui.Access_Label.setText(f"Access {self.icons[flag][1]}")
 
     @staticmethod
     def calculate_amplitude_envelope(audio, frame_length, hop_length):
         return np.array([max(audio[i:i + frame_length]) for i in range(0, len(audio), hop_length)])
+
+    def switch_modes(self,visibility):
+        for check_box in self.people_check_boxes:
+            check_box.setVisible(visibility)
