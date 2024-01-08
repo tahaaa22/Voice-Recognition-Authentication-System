@@ -1,6 +1,7 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 from mplwidget import MplWidget
 from ApplicationManager import *
+import sys
 
 
 class Ui_Voice_Recognizer(object):
@@ -498,7 +499,7 @@ class Ui_Voice_Recognizer(object):
 
     def retranslateUi(self, Voice_Recognizer):
         _translate = QtCore.QCoreApplication.translate
-        Voice_Recognizer.setWindowTitle(_translate("Voice_Recognizer", "Voice_Recognizer"))
+        Voice_Recognizer.setWindowTitle(_translate("Voice Recognizer", "Voice Recognizer"))
         self.label.setText(_translate("Voice_Recognizer", "Voice Recognition Authentication System"))
         self.groupBox.setTitle(_translate("Voice_Recognizer", "Voice Recording"))
         self.Start_Recording_Button.setText(_translate("Voice_Recognizer", "Start Recording"))
@@ -529,7 +530,6 @@ class Ui_Voice_Recognizer(object):
 
 
 if __name__ == "__main__":
-    import sys
     app = QtWidgets.QApplication(sys.argv)
     Voice_Recognizer = QtWidgets.QWidget()
     ui = Ui_Voice_Recognizer()
