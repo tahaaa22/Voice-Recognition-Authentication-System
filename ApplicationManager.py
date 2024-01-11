@@ -102,6 +102,8 @@ class ApplicationManger:
         self.recorded_voice, sampling_frequency = lb.load("output.ogg")
         self.ui.Spectrogram.canvas.plot_spectrogram(self.recorded_voice, sampling_frequency)
         
+        # print(f"Omar_Access ({self.c}).ogg")
+        # self.c += 1
         self.calculate_sound_features("output.ogg", False)
         model = self.train_model()
         rf_probabilities = model.predict_proba(self.features_array.reshape(1, -1))
@@ -133,7 +135,7 @@ class ApplicationManger:
                 access_flag = 1
         else:
             for i in range(4):
-                if (max(people_sums) == people_sums[i] and max(statement_sums) > 0.4
+                if (max(people_sums) == people_sums[i] and max(statement_sums) > 0.5
                         and self.people_check_boxes[i].isChecked()):
                     access_flag = 1
 
