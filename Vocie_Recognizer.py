@@ -1,6 +1,7 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 from mplwidget import MplWidget
 from ApplicationManager import *
+import sys
 
 
 class Ui_Voice_Recognizer(object):
@@ -164,6 +165,13 @@ class Ui_Voice_Recognizer(object):
         self.gridLayout_6.addLayout(self.horizontalLayout_3, 0, 0, 1, 1)
         self.horizontalLayout_4 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_4.setObjectName("horizontalLayout_4")
+        self.Grant_Access_To_Label = QtWidgets.QLabel(self.groupBox_2)
+        font = QtGui.QFont()
+        font.setBold(True)
+        font.setWeight(75)
+        self.Grant_Access_To_Label.setFont(font)
+        self.Grant_Access_To_Label.setObjectName("Grant_Access_To_Label")
+        self.horizontalLayout_4.addWidget(self.Grant_Access_To_Label)
         self.Hazem_CheckBox = QtWidgets.QCheckBox(self.groupBox_2)
         font = QtGui.QFont()
         font.setBold(True)
@@ -491,7 +499,7 @@ class Ui_Voice_Recognizer(object):
 
     def retranslateUi(self, Voice_Recognizer):
         _translate = QtCore.QCoreApplication.translate
-        Voice_Recognizer.setWindowTitle(_translate("Voice_Recognizer", "Voice_Recognizer"))
+        Voice_Recognizer.setWindowTitle(_translate("Voice Recognizer", "Voice Recognizer"))
         self.label.setText(_translate("Voice_Recognizer", "Voice Recognition Authentication System"))
         self.groupBox.setTitle(_translate("Voice_Recognizer", "Voice Recording"))
         self.Start_Recording_Button.setText(_translate("Voice_Recognizer", "Start Recording"))
@@ -510,6 +518,7 @@ class Ui_Voice_Recognizer(object):
         self.label_3.setText(_translate("Voice_Recognizer", "Open Middle Door"))
         self.label_7.setText(_translate("Voice_Recognizer", "Release Entrance Key"))
         self.groupBox_4.setTitle(_translate("Voice_Recognizer", "Persons Matching"))
+        self.Grant_Access_To_Label.setText(_translate("Voice_Recognizer", "Grant access to: "))
         self.label_10.setText(_translate("Voice_Recognizer", "Hazem"))
         self.label_9.setText(_translate("Voice_Recognizer", "Omar"))
         self.label_8.setText(_translate("Voice_Recognizer", "Ahmed"))
@@ -521,7 +530,6 @@ class Ui_Voice_Recognizer(object):
 
 
 if __name__ == "__main__":
-    import sys
     app = QtWidgets.QApplication(sys.argv)
     Voice_Recognizer = QtWidgets.QWidget()
     ui = Ui_Voice_Recognizer()

@@ -21,8 +21,8 @@ class ApplicationManger:
         self.database_features_array = []
         self.file_names = []
         self.c = 1
-        self.right_mark_icon = QPixmap("Assets/Correct.png").scaledToWidth(50)
-        self.wrong_mark_icon = QPixmap("Assets/Wrong.png").scaledToWidth(50)
+        self.right_mark_icon = QPixmap("Assets/Correct.png").scaledToWidth(60)
+        self.wrong_mark_icon = QPixmap("Assets/Wrong.png").scaledToWidth(60)
         self.icons = [[self.wrong_mark_icon, "Denied"], [self.right_mark_icon, "Authorized"]]
     
     def create_database(self):
@@ -32,6 +32,10 @@ class ApplicationManger:
                 for word in ("Access", "Door", "key"):
                     for i in range(1, 31):
                         self.calculate_sound_features(f"Voice Dataset/{name}_{word} ({i}).ogg")
+
+    @staticmethod
+    def calculate_mean_var(data):
+        return [d.mean() for d in data], [d.var() for d in data]
 
     def calculate_sound_features(self, file_path, database_flag=True):
         log_mel_spectrogram_mean = []
@@ -58,26 +62,12 @@ class ApplicationManger:
         root_mean_square = lb.feature.rms(y=voice_data, frame_length=1024, hop_length=512)
         filename = file_path[14:23]
 
-        for i in range(len(log_mel_spectrogram)):
-            log_mel_spectrogram_mean.append(log_mel_spectrogram[i].mean())
-            log_mel_spectrogram_var.append(log_mel_spectrogram[i].var())
+        features = [log_mel_spectrogram, mfccs, constant_q_transform, chroma, tone]
+        features_mean = [log_mel_spectrogram_mean, mfccs_mean, cqt_mean, chroma_mean, tone_mean]
+        features_var = [log_mel_spectrogram_var, mfccs_var, cqt_var, chroma_var, tone_var]
+        for i in range(len(features)):
+            features_mean[i], features_var[i] = self.calculate_mean_var(features[i])
 
-        for i in range(len(mfccs)):
-            mfccs_mean.append(mfccs[i].mean())
-            mfccs_var.append(mfccs[i].var())
-
-        for i in range(len(constant_q_transform)):
-            cqt_mean.append(constant_q_transform[i].mean())
-            cqt_var.append(constant_q_transform[i].var())
-
-        for i in range(len(chroma)):
-            chroma_mean.append(chroma[i].mean())
-            chroma_var.append(chroma[i].var())
-
-        for i in range(len(tone)):
-            tone_mean.append(tone[i].mean())
-            tone_var.append(tone[i].var())
-         
         self.features_array = np.hstack((mean(amplitude_envelope), var(amplitude_envelope), mean(root_mean_square),
                                         var(root_mean_square), mean(spectral_bandwidth), var(spectral_bandwidth),
                                         tone_mean, tone_var, chroma_mean, chroma_var, cqt_mean, cqt_var, mfccs_mean,
@@ -149,6 +139,7 @@ class ApplicationManger:
     def calculate_amplitude_envelope(audio, frame_length, hop_length):
         return np.array([max(audio[i:i + frame_length]) for i in range(0, len(audio), hop_length)])
 
-    def switch_modes(self,visibility):
+    def switch_modes(self, visibility):
+        self.ui.Grant_Access_To_Label.setVisible(visibility)
         for check_box in self.people_check_boxes:
             check_box.setVisible(visibility)
